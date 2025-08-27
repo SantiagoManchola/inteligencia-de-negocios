@@ -1,0 +1,46 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# --- Virtual Environment ---
+myenvname/
+venv/
+.env/
+.venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# --- Logs ---
+*.log
+*.out
+*.err
+
+# --- Jupyter Notebooks ---
+.ipynb_checkpoints
+*.ipynb~
+
+# --- Unit test / coverage reports ---
+.coverage
+.tox/
+.nox/
+pytest_cache/
+.coverage.*
+htmlcov/
+
+# --- IDEs y editores ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Sistema operativo ---
+.DS_Store
+Thumbs.db

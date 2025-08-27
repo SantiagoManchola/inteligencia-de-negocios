@@ -14,3 +14,33 @@
 -- 1. You can use the julianday function to convert a date to a number.
 -- 2. order_status == 'delivered' AND order_delivered_customer_date IS NOT NULL
 -- 3. Take distinct order_id.
+
+WITH delivered_orders AS (
+    SELECT DISTINCT
+        order_id,
+        order_delivered_customer_date,
+        order_estimated_delivery_date
+    FROM
+        olist_orders_dataset
+    WHERE
+        order_status = 'delivered'
+        AND order_delivered_customer_date IS NOT NULL
+)
+SELECT
+    strftime('%m', order_delivered_customer_date) AS month_no,
+    strftime('%b', order_delivered_customer_date) AS month,
+    AVG(CASE WHEN strftime('%Y', order_delivered_customer_date) = '2016' THEN julianday(order_delivered_customer_date) - julianday(order_approved_at) END) AS Year2016_real_time,
+    AVG(CASE WHEN strftime('%Y', order_delivered_customer_date) = '2017' THEN julianday(order_delivered_customer_date) - julianday(order_approved_at) END) AS Year2017_real_time,
+    AVG(CASE WHEN strftime('%Y', order_delivered_customer_date) = '2018' THEN julianday(order_delivered_customer_date) - julianday(order_approved_at) END) AS Year2018_real_time,
+    AVG(CASE WHEN strftime('%Y', order_delivered_customer_date) = '2016' THEN julianday(order_estimated_delivery_date) - julianday(order_approved_at) END) AS Year2016_estimated_time,
+    AVG(CASE WHEN strftime('%Y', order_delivered_customer_date) = '2017' THEN julianday(order_estimated_delivery_date) - julianday(order_approved_at) END) AS Year2017_estimated_time,
+    AVG(CASE WHEN strftime('%Y', order_delivered_customer_date) = '2018' THEN julianday(order_estimated_delivery_date) - julianday(order_approved_at) END) AS Year2018_estimated_time
+FROM
+    olist_orders_dataset
+WHERE
+    order_status = 'delivered'
+    AND order_delivered_customer_date IS NOT NULL
+GROUP BY
+    month_no, month
+ORDER BY
+    month_no;
