@@ -10,15 +10,20 @@
 -- 4. order_status == 'delivered' AND order_delivered_customer_date IS NOT NULL
 
 SELECT
-    c.customer_state AS State,
-    ROUND(AVG(julianday(o.order_delivered_customer_date) - julianday(o.order_estimated_delivery_date)), 2) AS Delivery_Difference
-FROM
-    olist_orders_dataset o
-    JOIN olist_customers_dataset c ON o.customer_id = c.customer_id
+  c.customer_state AS State,
+  CAST(
+    AVG(
+      julianday(strftime('%Y-%m-%d', o.order_estimated_delivery_date)) -
+      julianday(strftime('%Y-%m-%d', o.order_delivered_customer_date))
+    ) AS INTEGER
+  ) AS Delivery_Difference
+FROM olist_customers AS c
+JOIN olist_orders    AS o
+  ON c.customer_id = o.customer_id
 WHERE
-    o.order_status = 'delivered'
-    AND o.order_delivered_customer_date IS NOT NULL
+  o.order_status = 'delivered'
+  AND o.order_delivered_customer_date IS NOT NULL
 GROUP BY
-    c.customer_state
+  c.customer_state
 ORDER BY
-    Delivery_Difference DESC;
+  Delivery_Difference ASC;

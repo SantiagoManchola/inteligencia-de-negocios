@@ -3,11 +3,7 @@
 -- second one the total ammount of each.
 
 SELECT
-    order_status,
-    COUNT(*) AS Ammount
-FROM
-    olist_orders_dataset
-GROUP BY
-    order_status
-ORDER BY
-    Ammount DESC;
+  o.order_status AS order_status,
+  COUNT(o.order_status) AS Ammount
+FROM olist_orders AS o
+GROUP BY o.order_status;

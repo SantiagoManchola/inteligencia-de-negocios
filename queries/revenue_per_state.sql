@@ -5,17 +5,14 @@
 -- should be not null. 
 
 SELECT
-    c.customer_state,
-    ROUND(SUM(oi.price + oi.freight_value), 2) AS Revenue
-FROM
-    olist_order_items_dataset oi
-    JOIN olist_orders_dataset o ON oi.order_id = o.order_id
-    JOIN olist_customers_dataset c ON o.customer_id = c.customer_id
+  c.customer_state,
+  ROUND(SUM(p.payment_value), 3) AS Revenue
+FROM olist_orders          AS o
+JOIN olist_order_payments  AS p ON p.order_id = o.order_id
+JOIN olist_customers       AS c ON c.customer_id = o.customer_id
 WHERE
-    o.order_status = 'delivered'
-    AND o.order_delivered_customer_date IS NOT NULL
-GROUP BY
-    c.customer_state
-ORDER BY
-    Revenue DESC
+  o.order_status = 'delivered'
+  AND o.order_delivered_customer_date IS NOT NULL
+GROUP BY c.customer_state
+ORDER BY Revenue DESC
 LIMIT 10;

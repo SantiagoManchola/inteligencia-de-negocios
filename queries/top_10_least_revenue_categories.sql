@@ -8,20 +8,18 @@
 -- delivery date should be not null.
 
 SELECT
-    pct.product_category_name_english AS Category,
-    COUNT(DISTINCT o.order_id) AS Num_order,
-    ROUND(SUM(oi.price + oi.freight_value), 2) AS Revenue
-FROM
-    olist_order_items_dataset oi
-    JOIN olist_orders_dataset o ON oi.order_id = o.order_id
-    JOIN olist_products_dataset p ON oi.product_id = p.product_id
-    JOIN product_category_name_translation pct ON p.product_category_name = pct.product_category_name
+  t.product_category_name_english AS Category,
+  COUNT(DISTINCT oi.order_id)     AS Num_order,
+  ROUND(SUM(pay.payment_value), 2) AS Revenue
+FROM product_category_name_translation AS t
+JOIN olist_products         AS p  ON t.product_category_name = p.product_category_name
+JOIN olist_order_items      AS oi ON oi.product_id = p.product_id
+JOIN olist_orders           AS o  ON o.order_id = oi.order_id
+JOIN olist_order_payments   AS pay ON pay.order_id = o.order_id
 WHERE
-    o.order_status = 'delivered'
-    AND o.order_delivered_customer_date IS NOT NULL
-    AND pct.product_category_name_english IS NOT NULL
-GROUP BY
-    pct.product_category_name_english
-ORDER BY
-    Revenue ASC
+  o.order_status = 'delivered'
+  AND t.product_category_name_english IS NOT NULL
+  AND o.order_delivered_customer_date IS NOT NULL
+GROUP BY Category
+ORDER BY Revenue ASC
 LIMIT 10;
