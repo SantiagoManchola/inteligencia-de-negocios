@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 import seaborn as sns
 
+import pandas as pd
 from pandas import DataFrame
 
 
@@ -179,9 +180,30 @@ def plot_freight_value_weight_relationship(df: DataFrame):
     Args:
         df (DataFrame): Dataframe with freight value weight relationship query result
     """
-    # TODO: plot freight value weight relationship using seaborn scatterplot.
-    # Your x-axis should be weight and, y-axis freight value.
-    raise NotImplementedError
+    # Expected columns from transform: ['order_id', 'freight_value', 'product_weight_g']
+    if not {"freight_value", "product_weight_g"}.issubset(df.columns):
+        raise ValueError(
+            "DataFrame must contain 'freight_value' and 'product_weight_g' columns"
+        )
+
+    matplotlib.rc_file_defaults()
+    sns.set_style("whitegrid")
+
+    plt.figure(figsize=(10, 6))
+    # Use a regression plot to visualize potential correlation.
+    sns.regplot(
+        data=df,
+        x="product_weight_g",
+        y="freight_value",
+        scatter_kws={"alpha": 0.3, "s": 35},
+        line_kws={"color": "crimson"},
+        lowess=True,
+    )
+    plt.title("Freight Value vs Product Weight (g) per Order")
+    plt.xlabel("Total Product Weight (g)")
+    plt.ylabel("Total Freight Value")
+    plt.tight_layout()
+    plt.show()
 
 
 def plot_delivery_date_difference(df: DataFrame):
@@ -201,7 +223,35 @@ def plot_order_amount_per_day_with_holidays(df: DataFrame):
     Args:
         df (DataFrame): Dataframe with order amount per day with holidays query result
     """
-    # TODO: plot order amount per day with holidays using matplotlib.
-    # Mark holidays with vertical lines.
-    # Hint: use plt.axvline.
-    raise NotImplementedError
+    # Expected columns: ['order_count', 'date', 'holiday']
+    required_cols = {"order_count", "date", "holiday"}
+    if not required_cols.issubset(df.columns):
+        raise ValueError(f"DataFrame must contain columns: {required_cols}")
+
+    data = df.copy()
+    # Convert epoch ms to datetime if needed
+    if data["date"].dtype != "datetime64[ns]":
+        # If ints (epoch ms)
+        if data["date"].dtype.kind in {"i", "u"}:
+            data["date"] = pd.to_datetime(data["date"], unit="ms")
+        else:  # Try generic parse (could be object of python date)
+            data["date"] = pd.to_datetime(data["date"])
+
+    data = data.sort_values("date")
+
+    matplotlib.rc_file_defaults()
+    plt.figure(figsize=(14, 6))
+    plt.plot(data["date"], data["order_count"], label="Orders per day", linewidth=1)
+
+    # Mark holidays
+    holiday_dates = data.loc[data["holiday"], "date"].tolist()
+    for h in holiday_dates:
+        plt.axvline(h, color="red", linestyle="--", alpha=0.4)
+
+    plt.title("Daily Order Count (2017) with Holidays Marked")
+    plt.xlabel("Date")
+    plt.ylabel("Order Count")
+    if holiday_dates:
+        plt.legend()
+    plt.tight_layout()
+    plt.show()
