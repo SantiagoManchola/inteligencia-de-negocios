@@ -17,7 +17,12 @@ Basically, they would like to understand how much revenue by year they got, whic
 
 You will consume and use data from two sources.
 
-The first one is a Brazilian e-commerce public dataset of orders made at the Olist Store, provided as CSVs files. This is real commercial data, that has been anonymized. The dataset has information on 100k orders from 2016 to 2018 made at multiple marketplaces in Brazil. Its features allow viewing orders from multiple dimensions: from order status, price, payment, and freight performance to customer location, product attributes and finally reviews written by customers. You will find an image showing the database schema at `images/data_schema.png`. To get the dataset please download it from this [link](https://drive.google.com/file/d/1Ofm0tZ30KVXhXRp7LpTkzd_VaJg9Peno/view?usp=sharing), extract the `dataset` folder from the `.zip` file and place it into the root project folder. See `ASSIGNMENT.md`, section **Project Structure** to validate you've placed the dataset as it's needed.
+The first one is a Brazilian e-commerce public dataset of orders made at the Olist Store, provided as CSV files. This is real commercial data that has been anonymized. The dataset has information on 100k orders from 2016 to 2018 made at multiple marketplaces in Brazil. Its features allow viewing orders from multiple dimensions: from order status, price, payment, and freight performance to customer location, product attributes and finally reviews written by customers. You will find an image showing the database schema at `images/data_schema.png`.
+
+Dataset availability:
+- The `dataset/` folder (CSV source files) is versioned in this repository so you can clone and run immediately.
+- If for some reason the folder is missing (e.g. you performed a sparse/partial clone) you can download it from this [link](https://drive.google.com/file/d/1Ofm0tZ30KVXhXRp7LpTkzd_VaJg9Peno/view?usp=sharing), extract the `dataset` folder from the `.zip` file and place it into the project root.
+See `ASSIGNMENT.md`, section **Project Structure** to validate its location.
 
 The second source is a public API: https://date.nager.at. You will use it to retrieve information about Brazil's Public Holidays and correlate that with certain metrics about the delivery of products.
 
@@ -81,3 +86,115 @@ $ pytest tests/
 If you want to learn more about testing Python code, please read:
 - [Effective Python Testing With Pytest](https://realpython.com/pytest-python-testing/)
 - [The Hitchhiker’s Guide to Python: Testing Your Code](https://docs.python-guide.org/writing/tests/)
+
+## Orquestación con Apache Airflow
+
+El proyecto incluye un DAG (`elt_olist_pipeline`) en `airflow_home/dags/elt_olist_dag.py` que automatiza el flujo ELT.
+
+Flujo de tareas:
+1. extract: lee CSVs + API de festivos y guarda cada DataFrame como CSV cacheado en `.airflow_cache/`.
+2. load: ingesta a SQLite (`olist.db`) usando únicamente los archivos cacheados.
+3. transform: ejecuta consultas (SQL y pandas) y exporta resultados a `exports/`.
+4. summary: imprime métricas ligeras (conteos) vía XCom.
+
+Ventajas implementadas:
+- Evita pasar DataFrames grandes por XCom.
+- Reutiliza código existente en `src/` sin duplicación de lógica.
+- Parámetro `holidays_year` expuesto (por defecto 2017) para futura reutilización.
+
+### Configuración rápida (PowerShell / Windows)
+Usa un entorno virtual separado para Airflow para no romper dependencias del proyecto principal.
+
+```powershell
+# Crear y activar entorno
+python -m venv airflow_venv
+airflow_venv\Scripts\Activate.ps1
+
+# Instalar Airflow (ejemplo con constraints para Python 3.12)
+pip install "apache-airflow==2.9.1" --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.9.1/constraints-3.12.txt
+
+# Inicializar metadatos
+airflow db init
+
+# Crear usuario admin
+airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin
+
+# Servidor web y scheduler (dos terminales)
+airflow webserver -p 8080
+airflow scheduler
+```
+
+Luego ingresa a http://localhost:8080 y habilita el DAG.
+
+### Ejecución manual
+```powershell
+airflow dags trigger elt_olist_pipeline
+```
+
+Puedes sobreescribir parámetros al disparar:
+```powershell
+airflow dags trigger elt_olist_pipeline --conf '{"holidays_year": 2018}'
+```
+
+### Artefactos generados
+- Base de datos: `olist.db`
+- Resultados transformados: `exports/*.csv`
+- Caché intermedio: `.airflow_cache/`
+
+### Limpieza opcional
+Puedes limpiar la caché si requieres una extracción fresca:
+```powershell
+Remove-Item .airflow_cache -Recurse -Force
+```
+
+### Notas
+- Si `load` falla por archivos faltantes, ejecuta primero `extract`.
+- El diseño actual sobrescribe tablas (`if_exists='replace'`), adecuado para fines académicos.
+- Para producción podrías añadir: sensores de disponibilidad de archivos, verificación de esquemas y retención de historiales.
+
+## Cómo clonar y ejecutar Airflow en otro PC
+
+
+1. Entorno separado para Airflow (recomendado)
+```powershell
+python -m venv airflow_venv
+airflow_venv\Scripts\Activate.ps1
+pip install "apache-airflow==2.9.1" --constraint https://raw.githubusercontent.com/apache/airflow/constraints-2.9.1/constraints-3.12.txt
+airflow db init
+airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin
+```
+2. Copiar/Validar DAG
+	- Confirmar que `airflow_home/dags/elt_olist_dag.py` está presente (si no, copiarlo desde el repo original a esa ruta).
+
+3. Iniciar servicios
+```powershell
+airflow webserver -p 8080
+airflow scheduler
+```
+	Abrir http://localhost:8080, habilitar DAG `elt_olist_pipeline` y disparar un run.
+
+4. Resultados
+	- Base: `olist.db`
+	- Exports: `exports/*.csv` (se regeneran en cada run)
+
+5. Actualizar credenciales Airflow (opcional)
+```powershell
+airflow users reset-password -u admin
+```
+
+6. Limpiezas
+```powershell
+Remove-Item .airflow_cache -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item exports\*.csv -Force -ErrorAction SilentlyContinue
+```
+
+7. (Opcional) Excluir dataset del control de versiones
+	- Actualmente los CSV en `dataset/` están versionados para facilitar la reproducción académica.
+	- Si prefieres no incluirlos (por tamaño o políticas), añade de nuevo la regla `dataset/*.csv` a `.gitignore` y ejecuta:
+	  ```powershell
+	  git rm -r --cached dataset
+	  git commit -m "chore: stop tracking dataset csvs"
+	  ```
+	- Luego puedes documentar cómo obtenerlos usando el enlace indicado arriba.
+
+Resumen: clonas, pones dataset, instalas dependencias (dos entornos), inicializas Airflow, creas usuario, ejecutas DAG, revisas `exports/`.

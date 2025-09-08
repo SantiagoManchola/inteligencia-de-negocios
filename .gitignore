@@ -13,6 +13,7 @@ myenvname/
 venv/
 .env/
 .venv/
+airflow_venv/
 ENV/
 env/
 env.bak/
@@ -45,3 +46,23 @@ htmlcov/
 .DS_Store
 Thumbs.db
 olist.db
+
+# --- Airflow runtime ---
+airflow_home/airflow.db
+airflow_home/airflow-webserver.pid
+airflow_home/logs/
+airflow_home/dag_processor_manager/
+airflow_home/*_pid
+airflow_home/unittests.cfg
+airflow_home/scheduler/
+airflow_home/webserver_config.py
+
+# --- Cache / exports (reproducible outputs) ---
+.airflow_cache/
+exports/*.csv
+
+# --- Local scripts generated during verification ---
+verify_db.py
+
+# --- Do not commit raw dataset if large (uncomment to exclude) ---
+# dataset/*.csv

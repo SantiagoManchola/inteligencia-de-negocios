@@ -4,7 +4,6 @@ from typing import Callable, Dict, List
 
 import pandas as pd
 from pandas import DataFrame, read_sql
-from sqlalchemy import text
 from sqlalchemy.engine.base import Engine
 
 from src.config import QUERIES_ROOT_PATH
@@ -27,18 +26,13 @@ class QueryEnum(Enum):
 
 
 def read_query(query_name: str) -> str:
-    """Read the query from the file.
+    """Read raw SQL text from file and return as plain string.
 
-    Args:
-        query_name (str): The name of the file.
-
-    Returns:
-        str: The query.
+    Se evita envolver con sqlalchemy.text() para permitir que pandas.read_sql
+    funcione igual usando tanto un Engine como una conexión DBAPI directa.
     """
-    with open(f"{QUERIES_ROOT_PATH}/{query_name}.sql", "r") as f:
-        sql_file = f.read()
-        sql = text(sql_file)
-    return sql
+    with open(f"{QUERIES_ROOT_PATH}/{query_name}.sql", "r", encoding="utf-8") as f:
+        return f.read()
 
 
 def query_delivery_date_difference(database: Engine) -> QueryResult:
@@ -52,7 +46,7 @@ def query_delivery_date_difference(database: Engine) -> QueryResult:
     """
     query_name = QueryEnum.DELIVERY_DATE_DIFFERECE.value
     query = read_query(QueryEnum.DELIVERY_DATE_DIFFERECE.value)
-    return QueryResult(query=query_name, result=read_sql(query, database))
+    return QueryResult(query=query_name, result=read_sql(str(query), database))
 
 
 def query_global_ammount_order_status(database: Engine) -> QueryResult:
@@ -66,7 +60,7 @@ def query_global_ammount_order_status(database: Engine) -> QueryResult:
     """
     query_name = QueryEnum.GLOBAL_AMMOUNT_ORDER_STATUS.value
     query = read_query(QueryEnum.GLOBAL_AMMOUNT_ORDER_STATUS.value)
-    return QueryResult(query=query_name, result=read_sql(query, database))
+    return QueryResult(query=query_name, result=read_sql(str(query), database))
 
 
 def query_revenue_by_month_year(database: Engine) -> QueryResult:
@@ -80,7 +74,7 @@ def query_revenue_by_month_year(database: Engine) -> QueryResult:
     """
     query_name = QueryEnum.REVENUE_BY_MONTH_YEAR.value
     query = read_query(QueryEnum.REVENUE_BY_MONTH_YEAR.value)
-    return QueryResult(query=query_name, result=read_sql(query, database))
+    return QueryResult(query=query_name, result=read_sql(str(query), database))
 
 
 def query_revenue_per_state(database: Engine) -> QueryResult:
@@ -94,7 +88,7 @@ def query_revenue_per_state(database: Engine) -> QueryResult:
     """
     query_name = QueryEnum.REVENUE_PER_STATE.value
     query = read_query(QueryEnum.REVENUE_PER_STATE.value)
-    return QueryResult(query=query_name, result=read_sql(query, database))
+    return QueryResult(query=query_name, result=read_sql(str(query), database))
 
 
 def query_top_10_least_revenue_categories(database: Engine) -> QueryResult:
@@ -108,7 +102,7 @@ def query_top_10_least_revenue_categories(database: Engine) -> QueryResult:
     """
     query_name = QueryEnum.TOP_10_LEAST_REVENUE_CATEGORIES.value
     query = read_query(QueryEnum.TOP_10_LEAST_REVENUE_CATEGORIES.value)
-    return QueryResult(query=query_name, result=read_sql(query, database))
+    return QueryResult(query=query_name, result=read_sql(str(query), database))
 
 
 def query_top_10_revenue_categories(database: Engine) -> QueryResult:
@@ -122,7 +116,7 @@ def query_top_10_revenue_categories(database: Engine) -> QueryResult:
     """
     query_name = QueryEnum.TOP_10_REVENUE_CATEGORIES.value
     query = read_query(QueryEnum.TOP_10_REVENUE_CATEGORIES.value)
-    return QueryResult(query=query_name, result=read_sql(query, database))
+    return QueryResult(query=query_name, result=read_sql(str(query), database))
 
 
 def query_real_vs_estimated_delivered_time(database: Engine) -> QueryResult:
@@ -136,7 +130,7 @@ def query_real_vs_estimated_delivered_time(database: Engine) -> QueryResult:
     """
     query_name = QueryEnum.REAL_VS_ESTIMATED_DELIVERED_TIME.value
     query = read_query(QueryEnum.REAL_VS_ESTIMATED_DELIVERED_TIME.value)
-    return QueryResult(query=query_name, result=read_sql(query, database))
+    return QueryResult(query=query_name, result=read_sql(str(query), database))
 
 
 def query_freight_value_weight_relationship(database: Engine) -> QueryResult:
