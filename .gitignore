@@ -64,5 +64,6 @@ exports/*.csv
 # --- Local scripts generated during verification ---
 verify_db.py
 
-# --- Do not commit raw dataset if large (uncomment to exclude) ---
-# dataset/*.csv
+# --- Dataset ---
+# Ahora se versiona el dataset para facilitar clonación; comenta la línea siguiente si quieres excluirlo.
+# (dejamos sin patrón para incluir los CSV)
